@@ -45,7 +45,7 @@ def iter_Imports(nodes = []):
     yield "from animation_nodes import algorithms"
 
 def get_ImportModules(nodes):
-    neededModules = {"bpy", "sys"}
+    neededModules = {"bpy", "sys", "numpy"}
     neededModules.update(getModulesNeededByNodes(nodes))
     modulesString = ", ".join(neededModules)
     return "import " + modulesString

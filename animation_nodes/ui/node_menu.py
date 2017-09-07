@@ -444,7 +444,6 @@ class SplineMenu(bpy.types.Menu):
         insertNode(layout, "an_EvaluateSplineNode", "Evaluate")
         insertNode(layout, "an_ProjectOnSplineNode", "Project")
         insertNode(layout, "an_GetSplineLengthNode", "Get Length")
-        insertNode(layout, "an_GetSplineSamplesNode", "Get Samples")
         layout.separator()
         insertNode(layout, "an_CurveObjectOutputNode", "Object Output")
         layout.separator()
@@ -580,7 +579,6 @@ class GeometryMenu(bpy.types.Menu):
         insertNode(layout, "an_IntersectSpherePlaneNode", "Intersect Sphere Plane")
         insertNode(layout, "an_IntersectSphereSphereNode", "Intersect Sphere Sphere")
         layout.separator()
-        insertNode(layout, "an_BarycentricTransformNode", "Barycentric Transform")
         insertNode(layout, "an_BMeshTriangulateNode", "Triangulate BMesh")
 
 class KDTreeAndBVHTreeMenu(bpy.types.Menu):

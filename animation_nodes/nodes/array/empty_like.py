@@ -24,15 +24,5 @@ class EmptyLikeNode(bpy.types.Node, AnimationNode):
     def draw(self, layout):
         layout.prop(self, "order_type", text="")
 
-    def getExecutionCode(self, required):
-        yield "emptyArray = numpy.empty_like(array, None, %s, subok)" % self.generateOrder(self.order_type)
-
-    def getOrder(self, order_type):
-        if order_type == "C":
-            return "'C'"
-        elif order_type == "F":
-            return "'F'"
-        elif order_type == "A":
-            return "'A'"
-        else:
-            return "'K'"
+    def execute(self, array, subok):
+        emptyArray = numpy.empty_like(array, None, self.order_type, subok)

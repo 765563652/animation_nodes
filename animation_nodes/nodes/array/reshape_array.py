@@ -1,4 +1,5 @@
 import bpy
+import numpy
 from bpy.props import *
 from ... utils.layout import writeText
 from ... base_types import AnimationNode, VectorizedSocket
@@ -12,11 +13,11 @@ orderTypes = [
 class ReshapeArrayNode(bpy.types.Node, AnimationNode):
     bl_idname = "an_ReshapeArrayNode"
     bl_label = "Reshape Array"
+    errorHandlingType = "EXCEPTION"
 
     order_type = EnumProperty(name = "Order", default = "C",
         items = orderTypes, update = AnimationNode.refresh)
     multi = VectorizedSocket.newProperty()
-    errorMessage = StringProperty()
 
     def create(self):
         self.newInput("Array", "Array", "array")
@@ -26,21 +27,7 @@ class ReshapeArrayNode(bpy.types.Node, AnimationNode):
 
     def draw(self, layout):
         layout.prop(self, "order_type", text="")
-        if self.errorMessage != "":
-            writeText(layout, self.errorMessage, icon = "ERROR", width = 50)
 
-    def getExecutionCode(self, required):
-        yield "try:"
-        yield "    newArray = numpy.reshape(array, shape, %s)" % self.generateOrder(self.order_type)
-        yield "    self.errorMessage = ''"
-        yield "except Exception as e:"
-        yield "    newArray = array"
-        yield "    self.errorMessage = str(e)"
-
-    def generateOrder(self, order_type):
-        if order_type == "C":
-            return "'C'"
-        elif order_type == "F":
-            return "'F'"
-        else:
-            return "'A'"
+    def execute(self, array, shape):
+        try: return numpy.reshape(array, shape, self.order_type)
+        except Exception as e: self.raiseErrorMessage(str(e))

@@ -1,14 +1,12 @@
 import bpy
-from bpy.props import *
-from ... utils.layout import writeText
 from ... base_types import AnimationNode, VectorizedSocket
 
 class DeleteArrayNode(bpy.types.Node, AnimationNode):
     bl_idname = "an_DeleteArrayNode"
     bl_label = "Delete Array"
+    errorHandlingType = "EXCEPTION"
 
     multi = VectorizedSocket.newProperty()
-    errorMessage = StringProperty()
 
     def create(self):
         self.newInput("Array", "Array", "array")
@@ -17,14 +15,7 @@ class DeleteArrayNode(bpy.types.Node, AnimationNode):
         self.newInput("Integer", "Axis", "axis", value= -1)
         self.newOutput("Array", "SubArray", "subArray")
 
-    def draw(self, layout):
-        if self.errorMessage != "":
-            writeText(layout, self.errorMessage, icon = "ERROR", width = 50)
-
-    def getExecutionCode(self, required):
-        yield "try:"
-        yield "    subArray = numpy.delete(array, obj, axis)"
-        yield "    self.errorMessage = ''"
+    def execute(self, array, obj, axis):
+        try: subArray = numpy.delete(array, obj, axis)"
         yield "except Exception as e:"
-        yield "    subArray = array"
         yield "    self.errorMessage = str(e)"

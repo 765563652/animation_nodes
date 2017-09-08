@@ -25,4 +25,4 @@ class EmptyLikeNode(bpy.types.Node, AnimationNode):
         layout.prop(self, "order_type", text="")
 
     def execute(self, array, subok):
-        emptyArray = numpy.empty_like(array, None, self.order_type, subok)
+        return numpy.empty_like(array, None, self.order_type, subok)

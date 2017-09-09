@@ -1,4 +1,5 @@
 import bpy
+import numpy
 from ... base_types import AnimationNode, VectorizedSocket
 
 class DeleteArrayNode(bpy.types.Node, AnimationNode):
@@ -17,5 +18,4 @@ class DeleteArrayNode(bpy.types.Node, AnimationNode):
 
     def execute(self, array, obj, axis):
         try: subArray = numpy.delete(array, obj, axis)
-        except Exception as e:
-            self.errorMessage = str(e)
+        except Exception as e: self.raiseErrorMessage(str(e))

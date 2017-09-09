@@ -16,7 +16,9 @@ operations = [
     ("TAN", "Tangent", "tan(A)", "", 10),
     ("ARCSIN", "ArcSine", "arcsin(A)", "", 11),
     ("ARCCOS", "ArcCosine", "arccos(A)", "", 12),
-    ("ARCTAN", "ArcTangent", "arctan(A)", "", 10),
+    ("ARCTAN", "ArcTangent", "arctan(A)", "", 13),
+    ("MAX", "Max", "max(A)", "", 14),
+    ("MIN", "Min", "min(A)", "", 15),
 ]
 
 singleInput = [
@@ -68,3 +70,7 @@ class ArrayMathNode(bpy.types.Node, AnimationNode):
             return "res = numpy.arccos(a)"
         elif self.operation == "ARCTAN":
             return "res = numpy.arctan(a)"
+        elif self.operation == "MAX":
+            return "res = numpy.maximum(a, b)"
+        elif self.operation == "MIN":
+            return "res = numpy.minimum(a, b)"

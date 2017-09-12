@@ -58,7 +58,7 @@ registerImplicitConversion("Edge Indices List", "Array", "value.asNumpyArray().r
 registerImplicitConversion("Euler List", "Array", "value.asNumpyArray().reshape(-1, 3))")
 registerImplicitConversion("Float List", "Array", "value.asNumpyArray()")
 registerImplicitConversion("Integer List", "Array", "value.asNumpyArray()")
-registerImplicitConversion("Matrix List", "Array", "value.asNumpyArray().reshape(-1, 16)")
+registerImplicitConversion("Matrix List", "Array", "value.asNumpyArray().reshape(-1, 4, 4)")
 registerImplicitConversion("Quaternion List", "Array", "value.asNumpyArray().reshape(-1, 4)")
 registerImplicitConversion("Vector List", "Array", "value.asNumpyArray().reshape(-1, 3)")
 

@@ -165,6 +165,13 @@ def readLinesBetween(path, start, stop):
                 break
     return "".join(lines)
 
+def getPyxTargetLanguage(path):
+    text = readTextFile(path)
+    if re.search(r"#\s*distutils\s*:\s*language\s*=\s*c\+\+", text):
+        return "c++"
+    else:
+        return "c"
+
 def syncDirectories(source, target, relpathSelector):
     if not directoryExists(target):
         os.mkdir(target)
@@ -205,4 +212,14 @@ def syncDirectories(source, target, relpathSelector):
         "updated" : updatedFiles
     }
 
-__all__ = list(set(globals().keys()) - _globals - {"_globals"})
+allFunctions = list(set(globals().keys()) - _globals - {"_globals"})
+
+
+class Utils:
+    pass
+
+for fName in allFunctions:
+    setattr(Utils, fName, globals()[fName])
+
+
+__all__ = allFunctions + ["Utils"]

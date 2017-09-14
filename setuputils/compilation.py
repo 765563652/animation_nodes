@@ -26,7 +26,11 @@ def getCompileTasks(addonDirectory):
 
 def iterFilesToCompile(addonDirectory):
     for path in iterPathsWithExtension(addonDirectory, ".pyx"):
-        yield changeFileExtension(path, ".c")
+        language = getPyxTargetLanguage(path)
+        if language == "c++":
+            yield changeFileExtension(path, ".cpp")
+        elif language == "c":
+            yield changeFileExtension(path, ".c")
 
 
 class CompileExtModuleTask(GenerateFileTask):
@@ -69,7 +73,39 @@ def getPossibleCompiledFilesWithTime(cpath):
 def getExtensionFromPath(path):
     from distutils.core import Extension
     metadata = getCythonMetadata(path)
-    return Extension(metadata["module_name"], [path])
+    moduleName = metadata["module_name"]
+
+    kwargs = {
+        "sources" : [path],
+        "include_dirs" : [],
+        "define_macros" : [],
+        "undef_macros" : [],
+        "library_dirs" : [],
+        "libraries" : [],
+        "runtime_library_dirs" : [],
+        "extra_objects" : [],
+        "extra_compile_args" : [],
+        "extra_link_args" : [],
+        "export_symbols" : [],
+        "depends" : []
+    }
+
+    infoFile = changeFileExtension(path, "_setup_info.py")
+    for key, values in getExtensionsArgsFromInfoFile(infoFile).items():
+        kwargs[key].extend(values)
+
+    return Extension(moduleName, **kwargs)
+
+def getExtensionsArgsFromInfoFile(infoFilePath):
+    if not fileExists(infoFilePath):
+        return {}
+
+    data = executePythonFile(infoFilePath)
+    fName = "getExtensionArgs"
+    if fName not in data:
+        return {}
+
+    return data[fName](Utils)
 
 def buildExtensionInplace(extension):
     from distutils.core import setup

@@ -1,13 +1,13 @@
 import bpy
 from bpy.props import *
+from . array_types import arrayTypes
 from ... base_types import AnimationNode
-from . array_types import arrayTypes, getArrayType
 
 class ArrayAsTypeNode(bpy.types.Node, AnimationNode):
     bl_idname = "an_ArrayAsTypeNode"
     bl_label = "Array As Type"
 
-    array_type = EnumProperty(name = "Data Type", default = "FLOAT32",
+    array_type = EnumProperty(name = "Data Type", default = "float32",
         items = arrayTypes, update = AnimationNode.refresh)
 
     def create(self):
@@ -17,5 +17,5 @@ class ArrayAsTypeNode(bpy.types.Node, AnimationNode):
     def draw(self, layout):
         layout.prop(self, "array_type", text="")
 
-    def getExecutionCode(self, required):
-        return "new = old.astype(%s)" % getArrayType(self.array_type)
+    def execute(self, old):
+        return old.astype(self.array_type)

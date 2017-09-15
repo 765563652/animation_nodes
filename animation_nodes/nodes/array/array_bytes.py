@@ -9,5 +9,5 @@ class NumberOfBytesNode(bpy.types.Node, AnimationNode):
         self.newInput("Array", "Array", "array")
         self.newOutput("Integer", "Number Of Bytes", "n")
 
-    def getExecutionCode(self, required):
-        yield "n = array.nbytes"
+    def execute(self, array):
+        return array.nbytes

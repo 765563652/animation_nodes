@@ -1,18 +1,19 @@
 import bpy
+import numpy
 from bpy.props import *
+from . array_types import arrayTypes
 from ... base_types import AnimationNode
-from . array_types import arrayTypes, getArrayType
 
 stepTypeItems = [
-    ("START_STEP", "Start / Step", "", "NONE", 0),
-    ("START_STOP", "Start / Stop", "", "NONE", 1)
+    ("START_STOP", "Start / Stop", "", "NONE", 0),
+    ("START_STEP", "Start / Step", "", "NONE", 1)
 ]
 
 class ArrayRangeNode(bpy.types.Node, AnimationNode):
     bl_idname = "an_ArrayRangeNode"
     bl_label = "Array Range"
 
-    arrayType = EnumProperty(name = "Data Type", default = "FLOAT32",
+    arrayType = EnumProperty(name = "Data Type", default = "float32",
         items = arrayTypes, update = AnimationNode.refresh)
     rangeType = EnumProperty(name = "Range Type", default = "START_STOP",
         items = stepTypeItems, update = AnimationNode.refresh)
@@ -33,8 +34,13 @@ class ArrayRangeNode(bpy.types.Node, AnimationNode):
         layout.prop(self, "arrayType", text = "")
         layout.prop(self, "rangeType", text = "")
 
-    def getExecutionCode(self, required):
+    def getExecutionFunctionName(self):
         if self.rangeType == "START_STOP":
-            return "array, stepSize = numpy.linspace(start, stop, amount, endPoint, True, %s)" % (getArrayType(self.arrayType))
+            return "start_stop"
         else:
-            return "array = numpy.arange(start, stop, step if step != 0 else 1, %s )" % (getArrayType(self.arrayType))
+            return "start_step"
+
+    def start_stop(self, start, stop, amount, endPoint):
+        return numpy.linspace(start, stop, amount, endPoint, True, self.arrayType)
+    def start_step(self, start, stop, step):
+        return numpy.arange(start, stop, step if step != 0 else 1, self.arrayType)

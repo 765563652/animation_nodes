@@ -1,7 +1,7 @@
 cimport numpy
 import cython
 from ... math cimport Vector3, mixVec3
-from ... data_structures cimport Vector3DList
+from ... data_structures cimport Vector3DList, PolygonIndicesList
 
 edgeTable = (
 0x0  , 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c,
@@ -390,3 +390,19 @@ def marchingCubes(numpy.ndarray[numpy.double_t, mode="c", ndim=3] field):
                 triangles += polygonise(v1, v2, v3, v4, v5, v6, v7, v8,
                                 &p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8)
     return triangles
+
+def triangleIndices(int verticesCount):
+    cdef PolygonIndicesList polygons = PolygonIndicesList(indicesAmount = verticesCount,
+                                                          polygonAmount = verticesCount / 3)
+
+    cdef Py_ssize_t i = 0
+    cdef Py_ssize_t i3
+    for i in range(verticesCount / 3):
+        i3 = 3 * i
+        polygons.polyStarts.data[i] = i3
+        polygons.polyLengths.data[i] = 3
+
+        polygons.indices.data[i3 + 0] = i3
+        polygons.indices.data[i3 + 1] = i3 + 1
+        polygons.indices.data[i3 + 2] = i3 + 2
+    return polygons

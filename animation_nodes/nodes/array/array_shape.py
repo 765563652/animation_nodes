@@ -9,5 +9,5 @@ class ArrayShapeNode(bpy.types.Node, AnimationNode):
         self.newInput("Array", "Array", "array")
         self.newOutput("Integer List", "Shape", "shape")
 
-    def getExecutionCode(self, required):
-        yield "shape = array.shape"
+    def execute(self, array):
+        return array.shape

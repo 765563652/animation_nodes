@@ -1,6 +1,7 @@
 # distutils: language = c++
+# setup: options = c++11
 
-from ... math cimport Vector3, toVector3
+from ... math cimport toVector3
 from ... data_structures cimport Vector3DList, FloatList
 
 cdef dict simdLevels = {
@@ -12,47 +13,53 @@ cdef dict simdLevels = {
     5 : "ARM NEON"
 }
 
-cdef dict noiseTypes = {
-    "VALUE" :           NoiseType.ValueFractal,
-    "PERLIN" :          NoiseType.PerlinFractal,
-    "SIMPLEX" :         NoiseType.SimplexFractal,
-    "WHITE_NOISE" :     NoiseType.WhiteNoise,
-    "CELLULAR" :        NoiseType.Cellular,
-    "CUBIC" :           NoiseType.CubicFractal
-}
+noiseTypesData = [
+    ("SIMPLEX",     NoiseType.SimplexFractal, "Simplex",     0),
+    ("PERLIN",      NoiseType.PerlinFractal,  "Perlin",      1),
+    ("VALUE",       NoiseType.ValueFractal,   "Value",       2),
+    ("CUBIC",       NoiseType.CubicFractal,   "Cubic",       3),
+    ("CELLULAR",    NoiseType.Cellular,       "Cellular",    4),
+    ("WHITE_NOISE", NoiseType.WhiteNoise,     "White Noise", 5)
+]
 
-cdef dict cellularReturnTypes = {
-    "CELL_VALUE" :      CellularReturnType.CellValue,
-    "DISTANCE" :        CellularReturnType.Distance,
-    "DISTANCE_2" :      CellularReturnType.Distance2,
-    "DISTANCE_2_ADD" :  CellularReturnType.Distance2Add,
-    "DISTANCE_2_SUB" :  CellularReturnType.Distance2Sub,
-    "DISTANCE_2_MUL" :  CellularReturnType.Distance2Mul,
-    "DISTANCE_2_DIV" :  CellularReturnType.Distance2Div,
-    "DISTANCE_2_CAVE" : CellularReturnType.Distance2Cave,
-    "NOISE_LOOKUP" :    CellularReturnType.NoiseLookup
-}
+cellularReturnTypesData = [
+    ("CELL_VALUE",      CellularReturnType.CellValue,     "Cell Value",      0),
+    ("DISTANCE",        CellularReturnType.Distance,      "Distance",        1),
+    ("DISTANCE_2",      CellularReturnType.Distance2,     "Distance 2",      2),
+    ("DISTANCE_2_ADD",  CellularReturnType.Distance2Add,  "Distance 2 Add",  3),
+    ("DISTANCE_2_SUB",  CellularReturnType.Distance2Sub,  "Distance 2 Sub",  4),
+    ("DISTANCE_2_MUL",  CellularReturnType.Distance2Mul,  "Distance 2 Mul",  5),
+    ("DISTANCE_2_DIV",  CellularReturnType.Distance2Div,  "Distance 2 Div",  6),
+    ("DISTANCE_2_CAVE", CellularReturnType.Distance2Cave, "Distance 2 Cave", 7),
+    ("NOISE_LOOKUP",    CellularReturnType.NoiseLookup,   "Noise Lookup",    8)
+]
 
-cdef dict cellularDistanceFunctions = {
-    "EUCLIDEAN" : CellularDistanceFunction.Euclidean,
-    "MANHATTAN" : CellularDistanceFunction.Manhattan,
-    "NATURAL" :   CellularDistanceFunction.Natural
-}
+cellularDistanceFunctionsData = [
+    ("EUCLIDEAN", CellularDistanceFunction.Euclidean, "Euclidean", 0),
+    ("MANHATTAN", CellularDistanceFunction.Manhattan, "Manhattan", 1),
+    ("NATURAL",   CellularDistanceFunction.Natural,   "Natural",   2)
+]
 
-cdef dict perturbTypes = {
-    "NONE" :                       PerturbType.None,
-    "GRADIENT" :                   PerturbType.Gradient,
-    "GRADIENT_FRACTAL" :           PerturbType.GradientFractal,
-    "NORMALISE" :                  PerturbType.Normalise,
-    "GRADIENT_NORMALISE" :         PerturbType.Gradient_Normalise,
-    "GRADIENT_FRACTAL_NORMALISE" : PerturbType.GradientFractal_Normalise
-}
+perturbTypesData = [
+    ("NONE",               PerturbType.None,               "None",               0),
+    ("GRADIENT",           PerturbType.Gradient,           "Gradient",           1),
+    ("GRADIENT_FRACTAL",   PerturbType.GradientFractal,    "Gradient Fractal",   2),
+    ("NORMALISE",          PerturbType.Normalise,          "Normalise",          3),
+    ("GRADIENT_NORMALISE", PerturbType.Gradient_Normalise, "Gradient Normalise", 4),
+    ("GRADIENT_FRACTAL_NORMALISE", PerturbType.GradientFractal_Normalise, "Gradient Fractal Normalise", 5)
+]
 
-cdef dict fractalTypes = {
-    "FBM" :         FractalType.FBM,
-    "BILLOW" :      FractalType.Billow,
-    "RIGID_MULTI" : FractalType.RigidMulti
-}
+fractalTypesData = [
+    ("FBM",         FractalType.FBM,        "FBM",         0),
+    ("BILLOW",      FractalType.Billow,     "Billow",      1),
+    ("RIGID_MULTI", FractalType.RigidMulti, "Rigid Multi", 2)
+]
+
+cdef dict noiseTypes = {d[0] : d[1] for d in noiseTypesData}
+cdef dict cellularReturnTypes = {d[0] : d[1] for d in cellularReturnTypesData}
+cdef dict cellularDistanceFunctions = {d[0] : d[1] for d in cellularDistanceFunctionsData}
+cdef dict perturbTypes = {d[0] : d[1] for d in perturbTypesData}
+cdef dict fractalTypes = {d[0] : d[1] for d in fractalTypesData}
 
 noiseTypesList = list(sorted(noiseTypes.keys()))
 cellularReturnTypesList = list(sorted(cellularReturnTypes.keys()))
@@ -93,7 +100,6 @@ cdef class PyNoise:
         self.fn.SetCellularNoiseLookupType(noiseTypes[t])
 
     def setCellularNoiseLookupFrequency(self, float frequency):
-        print(frequency)
         self.fn.SetCellularNoiseLookupFrequency(frequency)
 
     def setCellularDistanceFunction(self, str t):
@@ -114,22 +120,32 @@ cdef class PyNoise:
         else:
             raise ValueError("octaves has to be between 1 and 10")
 
+    def setAmplitude(self, float amplitude):
+        self.amplitude = amplitude
 
-    def calculateList(self, Vector3DList vectors not None, float amplitude, offset = (0, 0, 0)):
-        cdef Vector3 _offset = toVector3(offset)
+    def setOffset(self, vector):
+        self.offset = toVector3(vector)
+
+
+    def calculateList(self, Vector3DList vectors not None):
         cdef FloatList result = FloatList(length = vectors.length)
-        calcNoise(self, result.data, vectors.data, &_offset, amplitude, vectors.length)
+        self.calculateList_LowLevel(vectors.data, vectors.length, result.data)
         return result
+
+    cdef calculateList_LowLevel(self, Vector3 *vectors, Py_ssize_t amount, float *target):
+        calcNoise(self, target, vectors, amount)
 
     def calculateSingle(self, vector):
         cdef Vector3 _vector = toVector3(vector)
-        cdef Vector3 offset = Vector3(0, 0, 0)
+        return self.calculateSingle_LowLevel(&_vector)
+
+    cdef calculateSingle_LowLevel(self, Vector3 *vector):
         cdef float result
-        calcNoise(self, &result, &_vector, &offset, 1, 1)
+        calcNoise(self, &result, vector, 1)
         return result
 
 
-cdef void calcNoise(PyNoise noise, float *results, Vector3 *vectors, Vector3 *offset, float amplitude, Py_ssize_t amount):
+cdef void calcNoise(PyNoise noise, float *results, Vector3 *vectors, Py_ssize_t amount):
     cdef FastNoiseVectorSet vectorSet
     vectorSet.SetSize(amount)
     vectorSet.sampleScale = 0
@@ -140,9 +156,11 @@ cdef void calcNoise(PyNoise noise, float *results, Vector3 *vectors, Vector3 *of
         vectorSet.ySet[i] = vectors[i].y
         vectorSet.zSet[i] = vectors[i].z
 
+    cdef Vector3 offset = noise.offset
     noise.fn.FillNoiseSet(results, &vectorSet, offset.x, offset.y, offset.z)
 
     vectorSet.Free()
 
+    cdef float amplitude = noise.amplitude
     for i in range(amount):
         results[i] *= amplitude

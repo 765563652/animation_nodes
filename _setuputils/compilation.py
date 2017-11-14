@@ -1,27 +1,28 @@
 import os
+import re
 import sys
 import glob
-import json
+import time
 from . generic import *
-from . task import GenerateFileTask
 
-def execute_Compile(setupInfoList, logger, addonDirectory):
+def execute_Compile(setupInfoList, addonDirectory):
     printHeader("Compile")
-    tasks = getCompileTasks(addonDirectory)
+    tasks = getCompileTasks(setupInfoList, addonDirectory)
     for i, task in enumerate(tasks, 1):
         print("{}/{}:".format(i, len(tasks)))
-        logger.logCompilationTask(task)
         task.execute()
 
     compilationInfo = getPlatformSummary()
+    compilationInfo["date"] = int(time.time())
     compilationInfoPath = os.path.join(addonDirectory, "compilation_info.json")
     writeJsonFile(compilationInfoPath, compilationInfo)
-    logger.logGeneratedFile(compilationInfoPath)
 
-def getCompileTasks(addonDirectory):
+def getCompileTasks(setupInfoList, addonDirectory):
+    includeDirs = list(iterCustomIncludeDirs(setupInfoList))
+
     tasks = []
     for path in iterFilesToCompile(addonDirectory):
-        tasks.append(CompileExtModuleTask(path))
+        tasks.append(CompileExtModuleTask(path, addonDirectory, includeDirs))
     return tasks
 
 def iterFilesToCompile(addonDirectory):
@@ -32,36 +33,22 @@ def iterFilesToCompile(addonDirectory):
         elif language == "c":
             yield changeFileExtension(path, ".c")
 
+def iterCustomIncludeDirs(setupInfoList):
+    fName = "getIncludeDirs"
+    for setupInfo in setupInfoList:
+        if fName in setupInfo:
+            for name in setupInfo[fName]():
+                yield changeFileName(setupInfo["__file__"], name)
 
-class CompileExtModuleTask(GenerateFileTask):
-    def __init__(self, path):
-        super().__init__()
+class CompileExtModuleTask:
+    def __init__(self, path, addonDirectory, includeDirs = []):
         self.path = path
-        self.target = None
+        self.addonDirectory = addonDirectory
+        self.includeDirs = includeDirs
 
     def execute(self):
-        extension = getExtensionFromPath(self.path)
-        targetsBefore = getPossibleCompiledFilesWithTime(self.path)
+        extension = getExtensionFromPath(self.path, self.addonDirectory, self.includeDirs)
         buildExtensionInplace(extension)
-        targetsAfter = getPossibleCompiledFilesWithTime(self.path)
-        newTargets = set(targetsAfter) - set(targetsBefore)
-
-        if len(targetsAfter) == 0:
-            raise Exception("target has not been generated for " + self.path)
-        elif len(newTargets) == 0:
-            self.target = max(targetsAfter, key = lambda x: x[1])[0]
-        elif len(newTargets) == 1:
-            self.target = newTargets.pop()[0]
-            self.targetChanged = True
-        else:
-            raise Exception("cannot choose the correct target for " + self.path)
-
-    def getSummary(self):
-        return {
-            "Path" : self.path,
-            "Target" : self.target,
-            "Changed" : self.targetChanged
-        }
 
 def getPossibleCompiledFilesWithTime(cpath):
     directory = os.path.dirname(cpath)
@@ -70,14 +57,13 @@ def getPossibleCompiledFilesWithTime(cpath):
     paths = glob.glob(pattern + ".pyd") + glob.glob(pattern + ".so")
     return [(path, tryGetLastModificationTime(path)) for path in paths]
 
-def getExtensionFromPath(path):
+def getExtensionFromPath(path, addonDirectory, includeDirs = []):
     from distutils.core import Extension
-    metadata = getCythonMetadata(path)
-    moduleName = metadata["module_name"]
+    moduleName = getModuleNameOfPath(path, addonDirectory)
 
     kwargs = {
         "sources" : [path],
-        "include_dirs" : [],
+        "include_dirs" : includeDirs,
         "define_macros" : [],
         "undef_macros" : [],
         "library_dirs" : [],
@@ -90,11 +76,18 @@ def getExtensionFromPath(path):
         "depends" : []
     }
 
+    for key, values in getExtensionArgsFromSetupOptions(getSetupOptions(path)).items():
+        kwargs[key].extend(values)
+
     infoFile = changeFileExtension(path, "_setup_info.py")
     for key, values in getExtensionsArgsFromInfoFile(infoFile).items():
         kwargs[key].extend(values)
 
     return Extension(moduleName, **kwargs)
+
+def getModuleNameOfPath(path, basePath):
+    relativePath = os.path.relpath(os.path.splitext(path)[0], os.path.dirname(basePath))
+    return ".".join(splitPath(relativePath))
 
 def getExtensionsArgsFromInfoFile(infoFilePath):
     if not fileExists(infoFilePath):
@@ -114,6 +107,20 @@ def buildExtensionInplace(extension):
     setup(ext_modules = [extension])
     sys.argv = oldArgs
 
-def getCythonMetadata(path):
-    text = readLinesBetween(path, "BEGIN: Cython Metadata", "END: Cython Metadata")
-    return json.loads(text)
+def getSetupOptions(path):
+    pyxPath = changeFileExtension(path, ".pyx")
+    if not fileExists(pyxPath):
+        return set()
+
+    options = set()
+    text = readTextFile(pyxPath)
+    for match in re.finditer(r"^#\s*setup\s*:\s*options\s*=(.*)$", text, flags = re.MULTILINE):
+        options.update(match.group(1).split())
+    return options
+
+def getExtensionArgsFromSetupOptions(options):
+    args = {}
+    if "c++11" in options:
+        if onLinux or onMacOS:
+            args["extra_compile_args"] = ["-std=c++11"]
+    return args

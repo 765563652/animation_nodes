@@ -1,7 +1,6 @@
 import bpy
 import numpy
 from bpy.props import *
-from ... utils.layout import writeText
 from ... base_types import AnimationNode, VectorizedSocket
 
 orderTypes = [

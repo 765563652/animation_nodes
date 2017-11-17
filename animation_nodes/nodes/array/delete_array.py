@@ -17,5 +17,5 @@ class DeleteArrayNode(bpy.types.Node, AnimationNode):
         self.newOutput("Array", "SubArray", "subArray")
 
     def execute(self, array, obj, axis):
-        try: subArray = numpy.delete(array, obj, axis)
+        try: return numpy.delete(array, obj, axis)
         except Exception as e: self.raiseErrorMessage(str(e))

@@ -1,7 +1,7 @@
 cimport numpy
 import cython
 from ... math cimport Vector3, mixVec3
-from ... data_structures cimport Vector3DList, PolygonIndicesList
+from ... data_structures cimport Vector3DList, EdgeIndicesList, PolygonIndicesList, Mesh
 
 edgeTable = (
 0x0  , 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c,
@@ -351,7 +351,7 @@ cdef polygonise(double v1, double v2, double v3, double v4,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def marchingCubes(numpy.ndarray[numpy.double_t, mode="c", ndim=3] field):
+cdef marchingCubes(numpy.ndarray[numpy.double_t, mode="c", ndim=3] field):
     cdef int width = field.shape[0] - 1
     cdef int length = field.shape[1] - 1
     cdef int height = field.shape[2] - 1
@@ -391,7 +391,20 @@ def marchingCubes(numpy.ndarray[numpy.double_t, mode="c", ndim=3] field):
                                 &p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8)
     return triangles
 
-def triangleIndices(int verticesCount):
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef edges(int verticesCount):
+    cdef EdgeIndicesList edges = EdgeIndicesList(length = verticesCount)
+
+    cdef Py_ssize_t i = 0
+    for i in range(verticesCount):
+        edges.data[i].v1 = i
+        edges.data[i].v2 = i + 1 if (i + 1) % 3 != 0 else i - 2
+    return edges
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef polygons(int verticesCount):
     cdef PolygonIndicesList polygons = PolygonIndicesList(indicesAmount = verticesCount,
                                                           polygonAmount = verticesCount / 3)
 
@@ -406,3 +419,13 @@ def triangleIndices(int verticesCount):
         polygons.indices.data[i3 + 1] = i3 + 1
         polygons.indices.data[i3 + 2] = i3 + 2
     return polygons
+
+def getSurfaceMesh(numpy.ndarray[numpy.double_t, mode="c", ndim=3] field):
+    cdef Vector3DList vertices = marchingCubes(field)
+    cdef int verticesCount = len(vertices)
+
+    return Mesh(
+        vertices,
+        edges(verticesCount),
+        polygons(verticesCount),
+        skipValidation = True)

@@ -17,7 +17,7 @@ def vertices(Py_ssize_t radialLoops, Py_ssize_t verticalLoops, Py_ssize_t innerL
         Py_ssize_t i, j, numVerts, dummyIndex
         Vector3DList vertices
         float outerRadiusCos, outerRadiusSin, innerRadiusCos, innerRadiusSin, iRadius, newCos
-        float heightStep = height / (verticalLoops - 1)
+        float heightStep = height / max(verticalLoops - 1, 1)
         float innerStep = (outerRadius if mergeCenter else outerRadius - innerRadius) / (innerLoops + 1)
         float angleStep = (2 * PI if mergeStartEnd else endAngle - startAngle) / (radialLoops if mergeStartEnd else radialLoops - 1)
         float iCos = cos(startAngle)
@@ -27,6 +27,30 @@ def vertices(Py_ssize_t radialLoops, Py_ssize_t verticalLoops, Py_ssize_t innerL
         float stepCos = cos(angleStep)
         float stepSin = sin(angleStep)
 
+    if verticalLoops == 1:
+        numVerts = radialLoops * (innerLoops + 1 + (not mergeCenter)) + mergeCenter
+        vertices = Vector3DList(length = numVerts, capacity = numVerts)
+
+        for i in range(radialLoops):
+            for j in range(innerLoops + 2):
+                iRadius = outerRadius - innerStep * j
+                dummyIndex = j * radialLoops + i
+                vertices.data[dummyIndex].x = iCos * iRadius
+                vertices.data[dummyIndex].y = iSin * iRadius
+                vertices.data[dummyIndex].z = 0
+
+            newCos = stepCos * iCos - stepSin * iSin
+            iSin = stepSin * iCos + stepCos * iSin
+            iCos = newCos
+
+        if mergeCenter:
+            dummyIndex = numVerts - 1
+            vertices.data[dummyIndex].x = 0
+            vertices.data[dummyIndex].y = 0
+            vertices.data[dummyIndex].z = 0
+
+        return vertices
+
     if mergeStartEnd:
         if mergeCenter:
             numVerts = radialLoops * (verticalLoops + innerLoops * 2) + 2
@@ -34,11 +58,9 @@ def vertices(Py_ssize_t radialLoops, Py_ssize_t verticalLoops, Py_ssize_t innerL
             numVerts = 2 * radialLoops * (verticalLoops + innerLoops)
     else:
         if mergeCenter:
-            numVerts = radialLoops * verticalLoops + 2 * (radialLoops +
-                                     verticalLoops - 2) * innerLoops + verticalLoops
+            numVerts = radialLoops * verticalLoops + 2 * (radialLoops + verticalLoops - 2) * innerLoops + verticalLoops
         else:
-            numVerts = 2 * (radialLoops * verticalLoops + innerLoops *
-                           (radialLoops + verticalLoops - 2))
+            numVerts = 2 * (radialLoops * verticalLoops + innerLoops * (radialLoops + verticalLoops - 2))
 
     vertices = Vector3DList(length = numVerts, capacity = numVerts)
 
@@ -79,7 +101,6 @@ def vertices(Py_ssize_t radialLoops, Py_ssize_t verticalLoops, Py_ssize_t innerL
                 dummyIndex = radialLoops * verticalLoops + j * radialLoops + i
             else:
                 dummyIndex = 2 * radialLoops * verticalLoops + j * radialLoops + i
-
             vertices.data[dummyIndex].x = iCos * iRadius
             vertices.data[dummyIndex].y = iSin * iRadius
             vertices.data[dummyIndex].z = 0

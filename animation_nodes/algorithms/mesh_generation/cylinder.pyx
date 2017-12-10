@@ -65,7 +65,7 @@ def vertices(Py_ssize_t radialLoops, Py_ssize_t verticalLoops, Py_ssize_t innerL
     vertices = Vector3DList(length = numVerts, capacity = numVerts)
 
     if not mergeStartEnd:
-        for i in range(verticalLoops):
+        for i in range(verticalLoops - 2):
             for j in range(innerLoops):
                 iRadius = outerRadius - innerStep * (j + 1)
                 if mergeCenter:
@@ -75,39 +75,40 @@ def vertices(Py_ssize_t radialLoops, Py_ssize_t verticalLoops, Py_ssize_t innerL
                 vertices.data[dummyIndex].x = iCos * iRadius
                 vertices.data[dummyIndex].y = iSin * iRadius
                 vertices.data[dummyIndex].z = (i + 1) * heightStep
+                dummyIndex += innerLoops * (verticalLoops - 2)
+                vertices.data[dummyIndex].x = eCos * iRadius
+                vertices.data[dummyIndex].y = eSin * iRadius
+                vertices.data[dummyIndex].z = (i + 1) * heightStep
 
     for i in range(radialLoops):
         outerRadiusCos = iCos * outerRadius
         outerRadiusSin = iSin * outerRadius
-        if not mergeCenter:
-            innerRadiusCos = iCos * innerRadius
-            innerRadiusSin = iSin * innerRadius
+        innerRadiusCos = iCos * innerRadius
+        innerRadiusSin = iSin * innerRadius
+
+        for j in range(innerLoops):
+            iRadius = innerRadius * (not mergeCenter) + innerStep * (j + 1)
+            dummyIndex = j * radialLoops + i
+            vertices.data[dummyIndex].x = iCos * iRadius
+            vertices.data[dummyIndex].y = iSin * iRadius
+            vertices.data[dummyIndex].z = 0
+            iRadius = outerRadius - innerStep * (j + 1)
+            dummyIndex += radialLoops * (verticalLoops + innerLoops)
+            vertices.data[dummyIndex].x = iCos * iRadius
+            vertices.data[dummyIndex].y = iSin * iRadius
+            vertices.data[dummyIndex].z = height
 
         for j in range(verticalLoops):
-            dummyIndex = j * radialLoops + i
+            dummyIndex = radialLoops * innerLoops + j * radialLoops + i
             vertices.data[dummyIndex].x = outerRadiusCos
             vertices.data[dummyIndex].y = outerRadiusSin
             vertices.data[dummyIndex].z = j * heightStep
 
             if not mergeCenter:
-                dummyIndex = radialLoops * (j + verticalLoops) + i
+                dummyIndex += radialLoops * (innerLoops + verticalLoops)
                 vertices.data[dummyIndex].x = innerRadiusCos
                 vertices.data[dummyIndex].y = innerRadiusSin
-                vertices.data[dummyIndex].z = j * heightStep
-
-        for j in range(innerLoops):
-            iRadius = outerRadius - innerStep * (j + 1)
-            if mergeCenter:
-                dummyIndex = radialLoops * verticalLoops + j * radialLoops + i
-            else:
-                dummyIndex = 2 * radialLoops * verticalLoops + j * radialLoops + i
-            vertices.data[dummyIndex].x = iCos * iRadius
-            vertices.data[dummyIndex].y = iSin * iRadius
-            vertices.data[dummyIndex].z = 0
-            dummyIndex += radialLoops * innerLoops
-            vertices.data[dummyIndex].x = iCos * iRadius
-            vertices.data[dummyIndex].y = iSin * iRadius
-            vertices.data[dummyIndex].z = height
+                vertices.data[dummyIndex].z = height - j * heightStep
 
         newCos = stepCos * iCos - stepSin * iSin
         iSin = stepSin * iCos + stepCos * iSin
@@ -124,16 +125,6 @@ def vertices(Py_ssize_t radialLoops, Py_ssize_t verticalLoops, Py_ssize_t innerL
             vertices.data[dummyIndex].y = 0
             vertices.data[dummyIndex].z = height
     else:
-        for i in range(verticalLoops):
-            for j in range(innerLoops):
-                iRadius = outerRadius - innerStep * (j + 1)
-                if mergeCenter:
-                    dummyIndex = radialLoops * (verticalLoops + innerLoops * 2) + innerLoops * (verticalLoops - 2) + i * innerLoops + j
-                else:
-                    dummyIndex = 2 * radialLoops * (verticalLoops + innerLoops) + innerLoops * (verticalLoops - 2) + i * innerLoops + j
-                vertices.data[dummyIndex].x = eCos * iRadius
-                vertices.data[dummyIndex].y = eSin * iRadius
-                vertices.data[dummyIndex].z = (i + 1) * heightStep
         if mergeCenter:
             for i in range(verticalLoops):
                 dummyIndex = radialLoops * (verticalLoops + innerLoops * 2) + innerLoops * (verticalLoops - 2) * 2 + i

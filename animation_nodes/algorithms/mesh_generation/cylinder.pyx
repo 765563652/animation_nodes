@@ -134,97 +134,146 @@ def vertices(Py_ssize_t radialLoops, Py_ssize_t verticalLoops, Py_ssize_t innerL
 
     return vertices
 
-
-# Edges
-############################################
-
-planeEdges = EdgeIndicesList.fromValues([(0, 2), (1, 3), (0, 1), (2, 3)])
-
-def edges(Py_ssize_t resolution):
-    if resolution < 2:
-        raise Exception("resolution has to be >= 2")
-
-    cdef:
-        EdgeIndicesList edges
-        Py_ssize_t i, edgeAmount
-
-    if resolution == 2:
-        edges = planeEdges.copy()
-    else:
-        edges = EdgeIndicesList(length = 3 * resolution)
-
-        for i in range(resolution - 1):
-            edges.data[3 * i + 0].v1 = i
-            edges.data[3 * i + 0].v2 = i + resolution
-
-            edges.data[3 * i + 1].v1 = i
-            edges.data[3 * i + 1].v2 = i + 1
-
-            edges.data[3 * i + 2].v1 = i + resolution
-            edges.data[3 * i + 2].v2 = i + resolution + 1
-
-        edges.data[edges.length - 3].v1 = resolution - 1
-        edges.data[edges.length - 3].v2 = 2 * resolution - 1
-
-        edges.data[edges.length - 2].v1 = resolution - 1
-        edges.data[edges.length - 2].v2 = 0
-
-        edges.data[edges.length - 1].v1 = 2 * resolution - 1
-        edges.data[edges.length - 1].v2 = resolution
-
-    return edges
-
-
-# Polygons
-############################################
-
-planePolygons = PolygonIndicesList.fromValues([(0, 1, 3, 2)])
-
-def polygons(Py_ssize_t resolution, bint caps = True):
-    if resolution < 2:
-        raise Exception("resolution has to be >= 2")
+def polygons(Py_ssize_t radialLoops, Py_ssize_t verticalLoops, Py_ssize_t innerLoops,
+             bint mergeStartEnd, bint mergeCenter):
 
     cdef:
         PolygonIndicesList polygons
-        Py_ssize_t i, polygonAmount, indicesAmount
+        Py_ssize_t i, j, polygonAmount, indicesAmount, dummyIndex, dummyIndexII
 
-    if resolution == 2:
-        polygons = planePolygons.copy()
-    else:
-        if caps:
-            indicesAmount = 6 * resolution
-            polygonAmount = resolution + 2
+    if mergeStartEnd:
+        if mergeCenter:
+            polygonAmount = radialLoops * (innerLoops * 2 + verticalLoops + 1)
+            indicesAmount = (innerLoops * 2 + verticalLoops - 1) * radialLoops * 4 + radialLoops * 6
         else:
-            indicesAmount = 4 * resolution
-            polygonAmount = resolution
+            polygonAmount = 2 * (verticalLoops + innerLoops) * radialLoops
+            indicesAmount = polygonAmount * 4
+    else:
+        if mergeCenter:
+            polygonAmount = (innerLoops * 2 + verticalLoops + 1) * (radialLoops - 1) + (innerLoops + 1) * (verticalLoops - 1) * 2
+            indicesAmount = ((innerLoops * 2 + verticalLoops - 1) * (radialLoops - 1) + (innerLoops + 1) * (verticalLoops - 1) * 2) * 4 + 6 * (radialLoops - 1)
+        else:
+            polygonAmount = 2 * (verticalLoops + innerLoops) * (radialLoops - 1) + (innerLoops + 1) * (verticalLoops - 1) * 2
+            indicesAmount = polygonAmount * 4
 
-        polygons = PolygonIndicesList(
-            indicesAmount = indicesAmount,
-            polygonAmount = polygonAmount)
+    polygons = PolygonIndicesList(
+        indicesAmount = indicesAmount,
+        polygonAmount = polygonAmount)
 
-        for i in range(resolution - 1):
-            polygons.polyStarts.data[i] = 4 * i
+    if mergeStartEnd:
+        if mergeCenter:
+            for i in range((innerLoops * 2 + verticalLoops - 1) * radialLoops):
+                polygons.polyStarts.data[i] = i * 4
+                polygons.polyLengths.data[i] = 4
+
+                polygons.indices.data[i * 4 + 0] = 0
+                polygons.indices.data[i * 4 + 1] = 1
+                polygons.indices.data[i * 4 + 2] = 2
+                polygons.indices.data[i * 4 + 3] = 3
+            for i in range(radialLoops * 2):
+                dummyIndex = (innerLoops * 2 + verticalLoops - 1) * radialLoops * 4
+                dummyIndexII = i + (innerLoops * 2 + verticalLoops - 1) * radialLoops
+                polygons.polyStarts.data[dummyIndexII] = dummyIndex + i * 3
+                polygons.polyLengths.data[dummyIndexII] = 3
+
+                polygons.indices.data[dummyIndex + i * 3 + 0] = 0
+                polygons.indices.data[dummyIndex + i * 3 + 1] = 1
+                polygons.indices.data[dummyIndex + i * 3 + 2] = 2
+        else:
+            for i in range(2 * (verticalLoops + innerLoops) * radialLoops):
+                polygons.polyStarts.data[i] = i * 4
+                polygons.polyLengths.data[i] = 4
+
+                polygons.indices.data[i * 4 + 0] = 0
+                polygons.indices.data[i * 4 + 1] = 1
+                polygons.indices.data[i * 4 + 2] = 2
+                polygons.indices.data[i * 4 + 3] = 3
+    else:
+        if mergeCenter:
+            for i in range(((innerLoops * 2 + verticalLoops - 1) * (radialLoops - 1) + (innerLoops + 1) * (verticalLoops - 1) * 2)):
+                polygons.polyStarts.data[i] = i * 4
+                polygons.polyLengths.data[i] = 4
+
+                polygons.indices.data[i * 4 + 0] = 0
+                polygons.indices.data[i * 4 + 1] = 1
+                polygons.indices.data[i * 4 + 2] = 2
+                polygons.indices.data[i * 4 + 3] = 3
+            for i in range((radialLoops - 1) * 2):
+                dummyIndex = ((innerLoops * 2 + verticalLoops - 1) * (radialLoops - 1) + (innerLoops + 1) * (verticalLoops - 1) * 2) * 4
+                dummyIndexII = i + ((innerLoops * 2 + verticalLoops - 1) * (radialLoops - 1) + (innerLoops + 1) * (verticalLoops - 1) * 2)
+                polygons.polyStarts.data[dummyIndexII] = dummyIndex + i * 3
+                polygons.polyLengths.data[dummyIndexII] = 3
+
+                polygons.indices.data[dummyIndex + i * 3 + 0] = 0
+                polygons.indices.data[dummyIndex + i * 3 + 1] = 1
+                polygons.indices.data[dummyIndex + i * 3 + 2] = 2
+        else:
+            for i in range(2 * (verticalLoops + innerLoops) * (radialLoops - 1) + (innerLoops + 1) * (verticalLoops - 1) * 2):
+                polygons.polyStarts.data[i] = i * 4
+                polygons.polyLengths.data[i] = 4
+
+                polygons.indices.data[i * 4 + 0] = 0
+                polygons.indices.data[i * 4 + 1] = 1
+                polygons.indices.data[i * 4 + 2] = 2
+                polygons.indices.data[i * 4 + 3] = 3
+
+    if mergeStartEnd:
+        for i in range((verticalLoops + verticalLoops * (not mergeCenter) + 2 * innerLoops - 1) * (radialLoops - 1)):
+            dummyIndex = i + i//(radialLoops - 1)
+            polygons.polyStarts.data[dummyIndex] = dummyIndex * 4
+            polygons.polyLengths.data[dummyIndex] = 4
+
+            i = dummyIndex * 4
+            polygons.indices.data[i + 0] = dummyIndex
+            polygons.indices.data[i + 1] = dummyIndex + 1
+            polygons.indices.data[i + 2] = dummyIndex + radialLoops + 1
+            polygons.indices.data[i + 3] = dummyIndex + radialLoops
+
+        for i in range(radialLoops - 1, (verticalLoops + verticalLoops * (not mergeCenter) + 2 * innerLoops - 1) * radialLoops, radialLoops):
+            dummyIndex = 4 * i
+            polygons.polyStarts.data[i] = dummyIndex
             polygons.polyLengths.data[i] = 4
 
-            polygons.indices.data[4 * i + 0] = i
-            polygons.indices.data[4 * i + 1] = i + 1
-            polygons.indices.data[4 * i + 2] = resolution + i + 1
-            polygons.indices.data[4 * i + 3] = resolution + i
+            polygons.indices.data[dummyIndex + 0] = i
+            polygons.indices.data[dummyIndex + 1] = i - radialLoops + 1
+            polygons.indices.data[dummyIndex + 2] = i + 1
+            polygons.indices.data[dummyIndex + 3] = i + radialLoops
+    else:
+        for i in range((verticalLoops + verticalLoops * (not mergeCenter) + 2 * innerLoops - 1) * (radialLoops - 1)):
+            dummyIndex = i + i//(radialLoops - 1)
+            polygons.polyStarts.data[i] = i * 4
+            polygons.polyLengths.data[i] = 4
 
-        polygons.polyStarts.data[resolution - 1] = 4 * (resolution - 1)
-        polygons.polyLengths.data[resolution - 1] = 4
-        polygons.indices.data[4 * (resolution - 1) + 0] = resolution - 1
-        polygons.indices.data[4 * (resolution - 1) + 1] = 0
-        polygons.indices.data[4 * (resolution - 1) + 2] = resolution
-        polygons.indices.data[4 * (resolution - 1) + 3] = 2 * resolution - 1
+            i *= 4
+            polygons.indices.data[i + 0] = dummyIndex
+            polygons.indices.data[i + 1] = dummyIndex + 1
+            polygons.indices.data[i + 2] = dummyIndex + radialLoops + 1
+            polygons.indices.data[i + 3] = dummyIndex + radialLoops
 
-        if caps:
-            polygons.polyStarts.data[resolution] = 4 * resolution
-            polygons.polyLengths.data[resolution] = resolution
-            polygons.polyStarts.data[resolution + 1] = 5 * resolution
-            polygons.polyLengths.data[resolution + 1] = resolution
+    if mergeCenter:
+        for i in range(radialLoops - 1):
+            dummyIndex = (2 * innerLoops + verticalLoops - 1) * radialLoops
+            dummyIndexII = dummyIndex * 4 + i * 3
+            dummyIndex += i
+            polygons.polyStarts.data[dummyIndex] = dummyIndexII
+            polygons.polyLengths.data[dummyIndex] = 3
 
-            for i in range(resolution):
-                polygons.indices.data[4 * resolution + i] = resolution - i - 1
-                polygons.indices.data[5 * resolution + i] = resolution + i
+            polygons.indices.data[dummyIndexII + 0] = 74
+            polygons.indices.data[dummyIndexII + 1] = i + 1
+            polygons.indices.data[dummyIndexII + 2] = i
+
+    #
+    # if not mergeCenter:
+    #     for i in range(radialLoops - 1 * mergeStartEnd):
+    #         dummyIndex = (2 * (verticalLoops + innerLoops) - 1) * radialLoops + i
+    #         dummyIndexII = dummyIndex * 4
+    #         polygons.polyStarts.data[dummyIndex] = dummyIndexII
+    #         polygons.polyLengths.data[dummyIndex] = 4
+    #
+    #         polygons.indices.data[dummyIndexII + 0] = dummyIndex
+    #         polygons.indices.data[dummyIndexII + 1] = dummyIndex + 1
+    #         polygons.indices.data[dummyIndexII + 2] = i + 1
+    #         polygons.indices.data[dummyIndexII + 3] = i
+
+
     return polygons

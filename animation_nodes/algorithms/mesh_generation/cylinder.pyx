@@ -1,17 +1,56 @@
 from libc.math cimport sin, cos
 from libc.math cimport M_PI as PI
-from ... data_structures cimport Vector3DList, EdgeIndicesList, PolygonIndicesList, Mesh
+from ... data_structures.meshes.validate import createValidEdgesList
+from ... data_structures cimport (Vector3DList, EdgeIndicesList, PolygonIndicesList, Mesh,
+                                  VirtualDoubleList, VirtualLongList, VirtualBooleanList)
 
-# Vertices
-###########################################
+def getCylinderMesh(Py_ssize_t radialLoops, Py_ssize_t verticalLoops, Py_ssize_t innerLoops,
+             float outerRadius, float innerRadius, float height,
+             float startAngle, float endAngle,
+             bint mergeStartEnd, bint mergeCenter):
 
-def getCylinderMesh():
-    print("To Do.")
+    cdef PolygonIndicesList polygonsIndices = polygons(radialLoops, verticalLoops, innerLoops,
+                                                mergeStartEnd, mergeCenter)
+
+    return Mesh(vertices(radialLoops, verticalLoops, innerLoops, outerRadius, innerRadius,
+                     height, startAngle, endAngle, mergeStartEnd, mergeCenter),
+                     createValidEdgesList(polygons = polygonsIndices), polygonsIndices,
+                     skipValidation = True)
+
+def getCylinderMeshList(Py_ssize_t amount,
+                        VirtualLongList radialLoops,
+                        VirtualLongList verticalLoops,
+                        VirtualLongList innerLoops,
+                        VirtualDoubleList outerRadius,
+                        VirtualDoubleList innerRadius,
+                        VirtualDoubleList height,
+                        VirtualDoubleList startAngle,
+                        VirtualDoubleList endAngle,
+                        VirtualBooleanList mergeStartEnd,
+                        VirtualBooleanList mergeCenter):
+
+    cdef list meshes = []
+    cdef Py_ssize_t i
+    cdef PolygonIndicesList polygonsIndices
+    for i in range(amount):
+        polygonsIndices = polygons(radialLoops.get(i), verticalLoops.get(i), innerLoops.get(i),
+                                   mergeStartEnd.get(i), mergeCenter.get(i))
+        meshes.append(Mesh(vertices(radialLoops.get(i), verticalLoops.get(i), innerLoops.get(i),
+                                    outerRadius.get(i), innerRadius.get(i), height.get(i),
+                                    startAngle.get(i), endAngle.get(i), mergeStartEnd.get(i),
+                                    mergeCenter.get(i)), createValidEdgesList(polygons = polygonsIndices),
+                                    polygonsIndices, skipValidation = True))
+
+    return meshes
 
 def vertices(Py_ssize_t radialLoops, Py_ssize_t verticalLoops, Py_ssize_t innerLoops,
              float outerRadius, float innerRadius, float height,
              float startAngle, float endAngle,
              bint mergeStartEnd, bint mergeCenter):
+
+    radialLoops = max(radialLoops, 3)
+    verticalLoops = max(verticalLoops, 1)
+    innerLoops = max(innerLoops, 0)
 
     cdef:
         Py_ssize_t i, j, numVerts, dummyIndex
@@ -138,6 +177,10 @@ def vertices(Py_ssize_t radialLoops, Py_ssize_t verticalLoops, Py_ssize_t innerL
 def polygons(Py_ssize_t radialLoops, Py_ssize_t verticalLoops, Py_ssize_t innerLoops,
              bint mergeStartEnd, bint mergeCenter):
 
+    radialLoops = max(radialLoops, 3)
+    verticalLoops = max(verticalLoops, 1)
+    innerLoops = max(innerLoops, 0)
+    
     cdef:
         PolygonIndicesList polygons
         Py_ssize_t i, polygonAmount, indicesAmount, dummyIndex, dummyIndexII, dummyIndexIII
@@ -235,76 +278,18 @@ def polygons(Py_ssize_t radialLoops, Py_ssize_t verticalLoops, Py_ssize_t innerL
         indicesAmount = indicesAmount,
         polygonAmount = polygonAmount)
 
-    # Dummy Data (Should Be Removed!)
-    if mergeStartEnd:
-        if mergeCenter:
-            for i in range((innerLoops * 2 + verticalLoops - 1) * radialLoops):
-                polygons.polyStarts.data[i] = i * 4
-                polygons.polyLengths.data[i] = 4
-
-                polygons.indices.data[i * 4 + 0] = 0
-                polygons.indices.data[i * 4 + 1] = 1
-                polygons.indices.data[i * 4 + 2] = 2
-                polygons.indices.data[i * 4 + 3] = 3
-            for i in range(radialLoops * 2):
-                dummyIndex = (innerLoops * 2 + verticalLoops - 1) * radialLoops * 4
-                dummyIndexII = i + (innerLoops * 2 + verticalLoops - 1) * radialLoops
-                polygons.polyStarts.data[dummyIndexII] = dummyIndex + i * 3
-                polygons.polyLengths.data[dummyIndexII] = 3
-
-                polygons.indices.data[dummyIndex + i * 3 + 0] = 0
-                polygons.indices.data[dummyIndex + i * 3 + 1] = 1
-                polygons.indices.data[dummyIndex + i * 3 + 2] = 2
-        else:
-            for i in range(2 * (verticalLoops + innerLoops) * radialLoops):
-                polygons.polyStarts.data[i] = i * 4
-                polygons.polyLengths.data[i] = 4
-
-                polygons.indices.data[i * 4 + 0] = 0
-                polygons.indices.data[i * 4 + 1] = 1
-                polygons.indices.data[i * 4 + 2] = 2
-                polygons.indices.data[i * 4 + 3] = 3
-    else:
-        if mergeCenter:
-            for i in range(((innerLoops * 2 + verticalLoops - 1) * (radialLoops - 1) + (innerLoops + 1) * (verticalLoops - 1) * 2)):
-                polygons.polyStarts.data[i] = i * 4
-                polygons.polyLengths.data[i] = 4
-
-                polygons.indices.data[i * 4 + 0] = 0
-                polygons.indices.data[i * 4 + 1] = 1
-                polygons.indices.data[i * 4 + 2] = 2
-                polygons.indices.data[i * 4 + 3] = 3
-            for i in range((radialLoops - 1) * 2):
-                dummyIndex = ((innerLoops * 2 + verticalLoops - 1) * (radialLoops - 1) + (innerLoops + 1) * (verticalLoops - 1) * 2) * 4
-                dummyIndexII = i + ((innerLoops * 2 + verticalLoops - 1) * (radialLoops - 1) + (innerLoops + 1) * (verticalLoops - 1) * 2)
-                polygons.polyStarts.data[dummyIndexII] = dummyIndex + i * 3
-                polygons.polyLengths.data[dummyIndexII] = 3
-
-                polygons.indices.data[dummyIndex + i * 3 + 0] = 0
-                polygons.indices.data[dummyIndex + i * 3 + 1] = 1
-                polygons.indices.data[dummyIndex + i * 3 + 2] = 2
-        else:
-            for i in range(2 * (verticalLoops + innerLoops) * (radialLoops - 1) + (innerLoops + 1) * (verticalLoops - 1) * 2):
-                polygons.polyStarts.data[i] = i * 4
-                polygons.polyLengths.data[i] = 4
-
-                polygons.indices.data[i * 4 + 0] = 0
-                polygons.indices.data[i * 4 + 1] = 1
-                polygons.indices.data[i * 4 + 2] = 2
-                polygons.indices.data[i * 4 + 3] = 3
-
     # Main Surface
     if mergeStartEnd:
         for i in range((verticalLoops + verticalLoops * (not mergeCenter) + 2 * innerLoops - 1) * (radialLoops - 1)):
             dummyIndex = i + i//(radialLoops - 1)
-            polygons.polyStarts.data[dummyIndex] = dummyIndex * 4
+            dummyIndexII = dummyIndex * 4
+            polygons.polyStarts.data[dummyIndex] = dummyIndexII
             polygons.polyLengths.data[dummyIndex] = 4
 
-            i = dummyIndex * 4
-            polygons.indices.data[i + 0] = dummyIndex
-            polygons.indices.data[i + 1] = dummyIndex + 1
-            polygons.indices.data[i + 2] = dummyIndex + radialLoops + 1
-            polygons.indices.data[i + 3] = dummyIndex + radialLoops
+            polygons.indices.data[dummyIndexII + 0] = dummyIndex
+            polygons.indices.data[dummyIndexII + 1] = dummyIndex + 1
+            polygons.indices.data[dummyIndexII + 2] = dummyIndex + radialLoops + 1
+            polygons.indices.data[dummyIndexII + 3] = dummyIndex + radialLoops
 
         for i in range(radialLoops - 1, (verticalLoops + verticalLoops * (not mergeCenter) + 2 * innerLoops - 1) * radialLoops, radialLoops):
             dummyIndex = 4 * i
@@ -318,14 +303,14 @@ def polygons(Py_ssize_t radialLoops, Py_ssize_t verticalLoops, Py_ssize_t innerL
     else:
         for i in range((verticalLoops + verticalLoops * (not mergeCenter) + 2 * innerLoops - 1) * (radialLoops - 1)):
             dummyIndex = i + i//(radialLoops - 1)
-            polygons.polyStarts.data[i] = i * 4
+            dummyIndexII = i * 4
+            polygons.polyStarts.data[i] = dummyIndexII
             polygons.polyLengths.data[i] = 4
 
-            i *= 4
-            polygons.indices.data[i + 0] = dummyIndex
-            polygons.indices.data[i + 1] = dummyIndex + 1
-            polygons.indices.data[i + 2] = dummyIndex + radialLoops + 1
-            polygons.indices.data[i + 3] = dummyIndex + radialLoops
+            polygons.indices.data[dummyIndexII + 0] = dummyIndex
+            polygons.indices.data[dummyIndexII + 1] = dummyIndex + 1
+            polygons.indices.data[dummyIndexII + 2] = dummyIndex + radialLoops + 1
+            polygons.indices.data[dummyIndexII + 3] = dummyIndex + radialLoops
 
     # Triangle Fan
     if mergeCenter:
@@ -353,6 +338,7 @@ def polygons(Py_ssize_t radialLoops, Py_ssize_t verticalLoops, Py_ssize_t innerL
             polygons.indices.data[dummyIndexII + 2] = dummyIndexIII - radialLoops
         else:
             dummyIndexIII = radialLoops * verticalLoops + (2 * (radialLoops + verticalLoops) - 4) * innerLoops
+
         for i in range(radialLoops - 1):
             dummyIndex = polygonAmount + i
             dummyIndexII = polygonAmount * 4 + i * 3
@@ -372,6 +358,7 @@ def polygons(Py_ssize_t radialLoops, Py_ssize_t verticalLoops, Py_ssize_t innerL
             polygons.indices.data[dummyIndexII + 0] = dummyIndex
             polygons.indices.data[dummyIndexII + 1] = dummyIndex + 1
             polygons.indices.data[dummyIndexII + 2] = dummyIndexIII + 1 if mergeStartEnd else dummyIndexIII + verticalLoops - 1
+
     # Connecting Loop For Hollow Cylinder
     else:
         polygonAmount = (2 * (verticalLoops + innerLoops) - 1)
@@ -693,6 +680,7 @@ def polygons(Py_ssize_t radialLoops, Py_ssize_t verticalLoops, Py_ssize_t innerL
             indicesAmount += 4
 
             return polygons
+
         # Singular or Double Polygons
         if verticalLoops == 2:
             if not innerLoops:
@@ -855,5 +843,4 @@ def polygons(Py_ssize_t radialLoops, Py_ssize_t verticalLoops, Py_ssize_t innerL
                     indicesAmount += 4
 
                 return polygons
-
     return polygons

@@ -1,3 +1,5 @@
+import numpy
+cimport numpy
 from bgl import *
 from .. data_structures cimport Vector3DList, Matrix4x4List
 from .. math cimport Vector3, Matrix4
@@ -9,6 +11,18 @@ def drawVector3DListPoints(Vector3DList vectors):
     cdef Py_ssize_t i
     glBegin(GL_POINTS)
     for i in range(len(vectors)):
+        vertex3f(vectors.data[i].x,
+                 vectors.data[i].y,
+                 vectors.data[i].z)
+    glEnd()
+
+def drawColoredVector3DListPoints(Vector3DList vectors, numpy.ndarray[float, ndim=2, mode="c"] colors):
+    cdef Py_ssize_t i
+    glBegin(GL_POINTS)
+    for i in range(len(vectors)):
+        glColor3f(colors[i][0],
+                  colors[i][1],
+                  colors[i][2])
         vertex3f(vectors.data[i].x,
                  vectors.data[i].y,
                  vectors.data[i].z)

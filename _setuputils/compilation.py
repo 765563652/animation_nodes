@@ -70,8 +70,8 @@ def getExtensionFromPath(path, addonDirectory, includeDirs = []):
         "libraries" : [],
         "runtime_library_dirs" : [],
         "extra_objects" : [],
-        "extra_compile_args" : [],
-        "extra_link_args" : [],
+        "extra_compile_args" : ['-fopenmp'],
+        "extra_link_args" : ['-fopenmp'],
         "export_symbols" : [],
         "depends" : []
     }

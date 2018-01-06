@@ -81,18 +81,18 @@ def interpolateVectorFieldBilinearly(numpy.ndarray[double, ndim=3, mode="c"] fie
             x = x % 1
             y = y % 1
 
-            vectors.data[i].x = bilinearInterpolation(x, y, field[xIndex, yIndex, 0],
-                                                       field[xIndex + xEdged, yIndex, 0],
-                                                       field[xIndex, yIndex + yEdged, 0],
-                                                       field[xIndex + xEdged, yIndex + yEdged, 0])
-            vectors.data[i].y = bilinearInterpolation(x, y, field[xIndex, yIndex, 1],
-                                                       field[xIndex + xEdged, yIndex, 1],
-                                                       field[xIndex, yIndex + yEdged, 1],
-                                                       field[xIndex + xEdged, yIndex + yEdged, 1])
-            vectors.data[i].z = bilinearInterpolation(x, y, field[xIndex, yIndex, 2],
-                                                       field[xIndex + xEdged, yIndex, 2],
-                                                       field[xIndex, yIndex + yEdged, 2],
-                                                       field[xIndex + xEdged, yIndex + yEdged, 2])
+            vectors.data[i].x = bilinearInterpolation(x, y, field[yIndex, xIndex, 0],
+                                                         field[yIndex, xIndex + xEdged, 0],
+                                                         field[yIndex + yEdged, xIndex, 0],
+                                                         field[yIndex + yEdged, xIndex + xEdged, 0])
+            vectors.data[i].y = bilinearInterpolation(x, y, field[yIndex, xIndex, 1],
+                                                         field[yIndex, xIndex + xEdged, 1],
+                                                         field[yIndex + yEdged, xIndex, 1],
+                                                         field[yIndex + yEdged, xIndex + xEdged, 1])
+            vectors.data[i].z = bilinearInterpolation(x, y, field[yIndex, xIndex, 2],
+                                                         field[yIndex, xIndex + xEdged, 2],
+                                                         field[yIndex + yEdged, xIndex, 2],
+                                                         field[yIndex + yEdged, xIndex + xEdged, 2])
         else:
             vectors.data[i].x = 0
             vectors.data[i].y = 0

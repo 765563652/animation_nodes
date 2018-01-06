@@ -34,7 +34,7 @@ class WriteImageNode(bpy.types.Node, AnimationNode):
             image = bpy.data.images.new(imageName, imageBuffer.shape[0], imageBuffer.shape[1])
         image.generated_width = imageBuffer.shape[0]
         image.generated_height = imageBuffer.shape[1]
-        image.pixels = arrayToFloatList(imageBuffer)
+        image.pixels = arrayToFloatList(imageBuffer.reshape(-1))
 
     def RGB(self, imageBuffer, imageName):
         if imageName in bpy.data.images:
@@ -54,4 +54,4 @@ class WriteImageNode(bpy.types.Node, AnimationNode):
         image.generated_width = imageBuffer.shape[0]
         image.generated_height = imageBuffer.shape[1]
         image.pixels = arrayToFloatList(numpy.concatenate([imageBuffer, imageBuffer, imageBuffer,
-                                        numpy.ones(imageBuffer.shape[:2]+(1,))], 2))
+                                        numpy.ones(imageBuffer.shape[:2]+(1,))], 2).reshape(-1))

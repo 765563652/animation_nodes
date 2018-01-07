@@ -2,11 +2,16 @@ import bpy
 import numpy
 from bpy.props import *
 from ... base_types import AnimationNode
-from . interpolation_utils import interpolateScalarFieldBilinearly, interpolateVectorFieldBilinearly
+from . interpolation_utils import (interpolateScalarFieldBilinearly,
+                                   interpolateVectorFieldBilinearly,
+                                   interpolateScalarFieldTrilinearly,
+                                   interpolateVectorFieldTrilinearly)
 
 interpolationTypes = [
     ("2D_SCALAR_FIELD", "2D Scalar Field", "", "NONE", 0),
-    ("2D_VECTOR_FIELD", "2D Vector Field", "", "NONE", 1)
+    ("2D_VECTOR_FIELD", "2D Vector Field", "", "NONE", 1),
+    ("3D_SCALAR_FIELD", "3D Scalar Field", "", "NONE", 2),
+    ("3D_VECTOR_FIELD", "3D Vector Field", "", "NONE", 3)
 ]
 
 class InterpolateFieldNode(bpy.types.Node, AnimationNode):
@@ -19,9 +24,9 @@ class InterpolateFieldNode(bpy.types.Node, AnimationNode):
     def create(self):
         self.newInput("Array", "Field", "field")
         self.newInput("Vector List", "Points", "points")
-        if self.interpolationType == "2D_SCALAR_FIELD":
+        if self.interpolationType in ("2D_SCALAR_FIELD", "3D_SCALAR_FIELD"):
             self.newOutput("Float List", "Values", "values")
-        elif self.interpolationType == "2D_VECTOR_FIELD":
+        else:
             self.newOutput("Vector List", "Vectors", "vectors")
 
 
@@ -33,8 +38,16 @@ class InterpolateFieldNode(bpy.types.Node, AnimationNode):
             return "interpolate2DScalarField"
         elif self.interpolationType == "2D_VECTOR_FIELD":
             return "interpolate2DVectorField"
+        elif self.interpolationType == "3D_SCALAR_FIELD":
+            return "interpolate3DScalarField"
+        elif self.interpolationType == "3D_VECTOR_FIELD":
+            return "interpolate3DVectorField"
 
     def interpolate2DScalarField(self, field, points):
         return interpolateScalarFieldBilinearly(field, points)
     def interpolate2DVectorField(self, field, points):
         return interpolateVectorFieldBilinearly(field, points)
+    def interpolate3DScalarField(self, field, points):
+        return interpolateScalarFieldTrilinearly(field, points)
+    def interpolate3DVectorField(self, field, points):
+        return interpolateVectorFieldTrilinearly(field, points)
